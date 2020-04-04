@@ -2,11 +2,12 @@ import time
 from typing import List
 
 from xavier import parser
+from xavier.matrix import State
 
 
 def format_res(input: List[List[bool]]):
     for line in input:
-        el = ['X' if c else ' ' for c in line]
+        el = ['X' if c == State.FILLED else ' ' for c in line]
         print(''.join(el))
 
 

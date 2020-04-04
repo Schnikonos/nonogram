@@ -1,4 +1,12 @@
+from enum import Enum
 from typing import List, Tuple
+
+
+class State(Enum):
+    NA = 0
+    FILLED = 1
+    EMPTY = 2
+
 
 class Constraint:
     list: List[int]
@@ -7,17 +15,10 @@ class Constraint:
         self.list = []
 
 
-class Line:
-    line: List[bool]
-
-    def __init__(self, size=0):
-        self.line = [False] * size
-
-
 class Possibilities:
     size: int
     constraint: Constraint
-    possibility: List[List[bool]]
+    possibility: List[List[State]]
 
     def __init__(self, size: int, constraint: Constraint):
         self.constraint = constraint
@@ -32,14 +33,14 @@ def min_space(constraint: List[int]) -> int:
     return sum(constraint) + len(constraint) - 1
 
 
-def get_possibilities(constraint: List[int], size: int) -> List[List[bool]]:
+def get_possibilities(constraint: List[int], size: int) -> List[List[State]]:
     if len(constraint) == 0:
-        return [[False] * size]
+        return [[State.EMPTY] * size]
     remaining = size - min_space(constraint)
     res = []
-    base_c = [True] * constraint[0] if len(constraint) == 1 else [True] * constraint[0] + [False]
+    base_c = [State.FILLED] * constraint[0] if len(constraint) == 1 else [State.FILLED] * constraint[0] + [State.EMPTY]
     for i in range(remaining + 1):
-        base = [False] * i + base_c
+        base = [State.EMPTY] * i + base_c
         rest = get_possibilities(constraint[1:], size - len(base))
         for r in rest:
             res.append(base + r)
@@ -56,21 +57,25 @@ class Matrix:
     col_constraints: List[Constraint]
     line_constraints: List[Constraint]
 
-    possibilities: List[Possibilities]
+    line_possibilities: List[Possibilities]
+    col_possibilities: List[Possibilities]
 
     def __init__(self):
         self.col_constraints = []
         self.line_constraints = []
-        self.possibilities = []
+        self.line_possibilities = []
+        self.col_possibilities = []
 
     def init(self):
         for line in self.line_constraints:
-            self.possibilities.append(Possibilities(len(self.col_constraints), line))
+            self.line_possibilities.append(Possibilities(len(self.col_constraints), line))
+        for col in self.col_constraints:
+            self.col_possibilities.append(Possibilities(len(self.col_constraints), col))
 
     def check_cols(self, p_indexes: List[int]) -> bool:
-        current_possibility = [self.possibilities[i].possibility[index] for (i, index) in enumerate(p_indexes)]
+        current_possibility = [self.line_possibilities[i].possibility[index] for (i, index) in enumerate(p_indexes)]
 
-        columns = [[] for x in range(len(self.col_constraints))]
+        columns: List[List[State]] = [[] for _ in range(len(self.col_constraints))]
         for l in current_possibility:
             for j, c in enumerate(columns):
                 c.append(l[j])
@@ -93,26 +98,26 @@ class Matrix:
         if len(p_indexes) == len(self.line_constraints):
             return True, p_indexes
 
-        for i in range(len(self.possibilities[len(p_indexes)].possibility)):
+        for i in range(len(self.line_possibilities[len(p_indexes)].possibility)):
             ok, res = self.evaluate(p_indexes + [i])
             if ok:
                 return True, res
         return False, []
 
-    def compute(self) -> List[List[bool]]:
+    def compute(self) -> List[List[State]]:
         ok, p_indexes = self.evaluate([])
         res = []
         for i, index in enumerate(p_indexes):
-            res.append(self.possibilities[i].possibility[index])
+            res.append(self.line_possibilities[i].possibility[index])
         return res
 
 
-def count(col: List[bool], is_final: bool) -> Tuple[List[int], int]:
+def count(col: List[State], is_final: bool) -> Tuple[List[int], int]:
     res = []
     index = 0
     current = 0
     for c in col:
-        if c:
+        if c == State.FILLED:
             current += 1
         elif current > 0:
             res.append(current)
@@ -125,4 +130,3 @@ def count(col: List[bool], is_final: bool) -> Tuple[List[int], int]:
         res.append(current)
         index += current
     return res, index
-
