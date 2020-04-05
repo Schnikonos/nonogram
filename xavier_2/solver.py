@@ -11,8 +11,15 @@ def format_res(input: List[List[bool]]):
         print(''.join(el))
 
 
+# Algo is the same as Xavier_1 except:
+#  - lines are sorted from least to most permutations to lower the nb of searches done
+#  - column comparison is done by checking the proposition against the list of possible columns
+#     -> this makes it more readable but way slower than xavier_1
+#              -> 8s for 15x15 (vs 0.76s for Xavier_1)
+#              -> 898s for 25x25 (vs 103s for Xavier_1)
+
 if __name__ == '__main__':
-    filename = '../testFiles/test4.txt'
+    filename = '../testFiles/test2.txt'
     start_time = time.time()
     matrix = parser.parser(filename)
     elapsed_time1 = time.time() - start_time

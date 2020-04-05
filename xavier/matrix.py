@@ -75,6 +75,7 @@ class Matrix:
     def check_cols(self, p_indexes: List[int]) -> bool:
         current_possibility = [self.line_possibilities[i].possibility[index] for (i, index) in enumerate(p_indexes)]
 
+        # Transform lines to columns
         columns: List[List[State]] = [[] for _ in range(len(self.col_constraints))]
         for l in current_possibility:
             for j, c in enumerate(columns):
@@ -112,7 +113,7 @@ class Matrix:
         return res
 
 
-def count(col: List[State], is_final: bool) -> Tuple[List[int], int]:
+def count(col: List[State], is_final_line: bool) -> Tuple[List[int], int]:
     res = []
     index = 0
     current = 0
@@ -126,7 +127,7 @@ def count(col: List[State], is_final: bool) -> Tuple[List[int], int]:
         else:
             index += 1
 
-    if is_final and current > 0:
+    if is_final_line and current > 0:
         res.append(current)
         index += current
     return res, index
