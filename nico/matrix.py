@@ -1,5 +1,10 @@
+from copy import deepcopy
 from enum import Enum
-from typing import List
+from typing import List, Tuple
+
+
+class NoSolutionLeft(Exception):
+    pass
 
 
 class State(Enum):
@@ -37,6 +42,8 @@ class CellState:
 
 
 class Cell:
+    x: int
+    y: int
     state_x: CellState
     state_y: CellState
 
@@ -85,6 +92,17 @@ class Cell:
         else:
             return 'O'
 
+    def get_proba(self):
+        if self.global_state != State.NA:
+            return -1
+        return max(self.state_x.empty, self.state_x.filled, self.state_y.empty, self.state_y.filled)
+
+    def get_guess(self) -> State:
+        proba = self.get_proba()
+        if proba == self.state_x.filled or proba == self.state_y.filled:
+            return State.FILLED
+        else:
+            return State.EMPTY
 
 class HasChanged:
     x_has_changed: bool
@@ -173,6 +191,8 @@ class Matrix:
         self.matrix_col = [[Cell() for _ in range(len(self.line_constraints))] for _ in range(len(self.col_constraints))]
         for i, line in enumerate(self.matrix_line):
             for j, cell in enumerate(line):
+                cell.x = i
+                cell.y = j
                 self.matrix_col[j][i] = cell
 
     def evaluate(self, is_col: bool):
@@ -195,6 +215,9 @@ class Matrix:
                 if possibility_ok:
                     new_list_possibility.append(possibility)
 
+            if len(new_list_possibility) == 0:
+                raise NoSolutionLeft()
+
             if len(new_list_possibility) != len(possibilities.possibility):
                 possibilities.possibility = new_list_possibility
 
@@ -207,8 +230,45 @@ class Matrix:
         while not self.has_changed.no_changes():
             self.evaluate(False)
             self.evaluate(True)
-        self.draw()
 
     def draw(self):
         for line in self.matrix_line:
             print("".join([cell.__str__() for cell in line]))
+
+    def is_filled(self):
+        for line in self.matrix_line:
+            for cell in line:
+                if cell.global_state == State.NA:
+                    return False
+        return True
+
+
+def compute(matrix: Matrix) -> bool:
+    try:
+        matrix.compute()
+        if matrix.is_filled():
+            matrix.draw()
+            print('Ok')
+            return True
+
+        max_cell = max([cell for line in matrix.matrix_line for cell in line], key=lambda cell: cell.get_proba())
+        best_guess = max_cell.get_guess()
+        other_guess = State.EMPTY if best_guess == State.FILLED else State.FILLED
+
+        guess_1 = deepcopy(matrix)
+        guess_1.matrix_line[max_cell.x][max_cell.y].global_state = best_guess
+        if compute(guess_1):
+            print('Ok1')
+            return True
+
+        guess_2 = deepcopy(matrix)
+        guess_2.matrix_line[max_cell.x][max_cell.y].global_state = other_guess
+        if compute(guess_2):
+            print('Ok2')
+            return True
+
+        print('No Solutions')
+        return False
+    except NoSolutionLeft:
+        print('Error')
+        return False

@@ -15,7 +15,7 @@ def format_res(input: List[List[bool]]):
 #  - lines are sorted from least to most permutations to lower the nb of searches done
 #  - column comparison is done by checking the proposition against the list of possible columns
 #     -> this makes it more readable but way slower than xavier_1
-#              -> 8s for 15x15 (vs 0.76s for Xavier_1 and 0.07s for nico)
+#              -> 8s for 15x15 (vs 0.76s for Xavier_1 and 0.1s for nico)
 #              -> 898s for 25x25 (vs 103s for Xavier_1 and 5s for nico)
 
 if __name__ == '__main__':
