@@ -1,6 +1,6 @@
 from typing import Dict, Tuple, List
 
-from xavier_2.matrix import Matrix, parse_str
+from nico.matrix import Matrix, parse_str
 
 
 def parser(filename: str) -> Matrix:

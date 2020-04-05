@@ -1,11 +1,16 @@
+from typing import List
+
 
 class A:
-    def __init__(self, key):
-        self.key = key
+    a: List[int]
 
+    def test(self):
+        if hasattr(self, 'a') and len(self.a) == 0:
+            print(1)
+        else:
+            print(0)
 
 if __name__ == '__main__':
-    a = [[1] * 5 for _ in range(3)]
-    print(a)
-    a[2][0] = 10
-    print(a)
+    o = A()
+    o.a = []
+    o.test()
