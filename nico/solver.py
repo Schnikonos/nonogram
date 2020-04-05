@@ -11,7 +11,7 @@ from nico import parser
 from nico.matrix import compute
 
 if __name__ == '__main__':
-    filename = '../testFiles/test4.txt'
+    filename = '../testFiles/test2.txt'
     start_time = time.time()
     matrix = parser.parser(filename)
     elapsed_time1 = time.time() - start_time

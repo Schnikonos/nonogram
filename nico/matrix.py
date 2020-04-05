@@ -104,6 +104,20 @@ class Cell:
         else:
             return State.EMPTY
 
+    def set_guess(self, state: State):
+        self.global_state = state
+        if state == State.FILLED:
+            self.state_x.filled = 1
+            self.state_x.empty = 0
+            self.state_y.filled = 1
+            self.state_y.empty = 0
+        else:
+            self.state_x.filled = 0
+            self.state_x.empty = 1
+            self.state_y.filled = 0
+            self.state_y.empty = 1
+
+
 class HasChanged:
     x_has_changed: bool
     y_has_changed: bool
@@ -248,27 +262,27 @@ def compute(matrix: Matrix) -> bool:
         matrix.compute()
         if matrix.is_filled():
             matrix.draw()
-            print('Ok')
             return True
 
         max_cell = max([cell for line in matrix.matrix_line for cell in line], key=lambda cell: cell.get_proba())
         best_guess = max_cell.get_guess()
         other_guess = State.EMPTY if best_guess == State.FILLED else State.FILLED
 
-        guess_1 = deepcopy(matrix)
-        guess_1.matrix_line[max_cell.x][max_cell.y].global_state = best_guess
+        guess_1 = mutate_matrix(matrix, max_cell, best_guess)
         if compute(guess_1):
-            print('Ok1')
             return True
 
-        guess_2 = deepcopy(matrix)
-        guess_2.matrix_line[max_cell.x][max_cell.y].global_state = other_guess
+        guess_2 = mutate_matrix(matrix, max_cell, other_guess)
         if compute(guess_2):
-            print('Ok2')
             return True
 
-        print('No Solutions')
         return False
     except NoSolutionLeft:
-        print('Error')
         return False
+
+
+def mutate_matrix(base_matrix: Matrix, cell: Cell, state: State) -> Matrix:
+    guess = deepcopy(base_matrix)
+    guess.matrix_line[cell.x][cell.y].set_guess(state)
+    guess.has_changed = HasChanged()
+    return guess
