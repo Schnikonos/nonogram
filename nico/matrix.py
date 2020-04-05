@@ -199,7 +199,7 @@ class Matrix:
         for line in self.line_constraints:
             self.line_possibilities.append(Possibilities(len(self.col_constraints), line))
         for col in self.col_constraints:
-            self.col_possibilities.append(Possibilities(len(self.col_constraints), col))
+            self.col_possibilities.append(Possibilities(len(self.line_constraints), col))
 
         self.matrix_line = [[Cell() for _ in range(len(self.col_constraints))] for _ in range(len(self.line_constraints))]
         self.matrix_col = [[Cell() for _ in range(len(self.line_constraints))] for _ in range(len(self.col_constraints))]
@@ -264,6 +264,10 @@ def compute(matrix: Matrix) -> bool:
             matrix.draw()
             return True
 
+        print('#' * 20 + ' TEMP START ' + '#' * 20)
+        matrix.draw()
+        print('#' * 20 + ' TEMP END ' + '#' * 20)
+
         max_cell = max([cell for line in matrix.matrix_line for cell in line], key=lambda cell: cell.get_proba())
         best_guess = max_cell.get_guess()
         other_guess = State.EMPTY if best_guess == State.FILLED else State.FILLED
@@ -278,6 +282,9 @@ def compute(matrix: Matrix) -> bool:
 
         return False
     except NoSolutionLeft:
+        print('#' * 20 + ' No Solutions ' + '#' * 20)
+        matrix.draw()
+        print('#' * 20 + ' No Solutions ' + '#' * 20)
         return False
 
 
