@@ -1,4 +1,5 @@
 import time
+from typing import List
 
 
 class Picross:
@@ -13,42 +14,32 @@ class Picross:
         self.col_comb = []
 
     def resolve(self):
-        def get_line_combs(line_len, line_def):
-            def combine(line_len, line_def, result_list, wrk_line, wrk_idx):
-                if not line_def:
-                    result_list.append(([0] * line_len).copy())
+        def get_line_combs(line_len: int, line_def: List[int]) -> List[int]:
+            result_list = []
+
+            def combine(remaining_len: int, remaining_def: List[int], wrk_line: List[int]):
+                if not remaining_def:
+                    result_list.append((wrk_line + [0] * remaining_len)[:line_len])
                     return
-                block = line_def.pop(0)
-                move_range = (line_len
+
+                block = remaining_def.pop(0)
+                move_range = (remaining_len
                               - block
-                              - sum(line_def)
-                              - len(line_def)
+                              - sum(remaining_def)
+                              - len(remaining_def)
                               + 1)
-                remain_idx = wrk_idx + block + 1
-                remain_len = line_len - block - 1
+
+                remain_len = remaining_len - block - 1
                 for i in range(move_range):
-                    wrk_line[wrk_idx:] = [0] * line_len
-                    wrk_line[wrk_idx + i: wrk_idx + i + block] = [1] * block
-                    if line_def:
-                        combine(remain_len - i, line_def, result_list, wrk_line, remain_idx + i)
-                    else:
-                        result_list.append(wrk_line.copy())
-                line_def.insert(0, block)
+                    combine(remain_len - i, remaining_def, wrk_line + [0] * i + [1] * block + [0])
+
+                remaining_def.insert(0, block)
                 return
 
-            result_list = []
-            wrk_line = []
-            wrk_idx = 0
-            combine(line_len, line_def, result_list, wrk_line, wrk_idx)
+            combine(line_len, line_def, [])
             return result_list
 
         def reduce():
-            def check_line(line, pattern):
-                for i, x in enumerate(line):
-                    if pattern[i] != '?' and x != pattern[i]:
-                        return False
-                return True
-
             for i, comb_list in enumerate(self.row_comb):
                 for j in range(self.row_len):
                     if self.matrix[i][j] == '?':
@@ -84,6 +75,13 @@ class Picross:
         while reduce():
             pass
         return
+
+
+def check_line(line, pattern):
+    for el_l, el_p in zip(line, pattern):
+        if el_p != '?' and el_l != el_p:
+            return False
+    return True
 
 
 if __name__ == "__main__":
