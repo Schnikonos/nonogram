@@ -1,4 +1,5 @@
 import time
+from itertools import product
 from typing import List, Union, Callable
 
 
@@ -21,42 +22,41 @@ class Picross:
         self.col_comb = []
 
     def resolve(self):
-        def _get_line_combs(line_len: int, line_def: List[int]) -> List[List[int]]:
-            result_list = []
+        def _get_line_combinations(global_len: int, remaining_def: List[int], wrk_line=None, separator=None) -> List[List[int]]:
+            if separator is None:
+                separator = []
+            if wrk_line is None:
+                wrk_line = []
 
-            def _combine(remaining_def: List[int], wrk_line: List[Union[int, str]], separator: List[Union[int, str]]):
-                remaining_len = line_len - len(wrk_line)
-                if not remaining_def:
-                    result_list.append((wrk_line + [0] * remaining_len))
-                    return
+            remaining_len = global_len - len(wrk_line)
+            if not remaining_def:
+                return [(wrk_line + [0] * remaining_len)]
 
-                block = remaining_def.pop(0)
-                move_range = (remaining_len
-                              - block
-                              - len(separator)
-                              - sum(remaining_def)
-                              - len(remaining_def)
-                              + 1)
+            block = remaining_def.pop(0)
+            move_range = (remaining_len
+                          - block
+                          - len(separator)
+                          - sum(remaining_def)
+                          - len(remaining_def)
+                          + 1)
 
-                for i in range(move_range):
-                    _combine(remaining_def,
-                             wrk_line + separator + [0] * i + [1] * block,
-                             [0])
+            res = []
+            for i in range(move_range):
+                res += _get_line_combinations(global_len, remaining_def,
+                                              wrk_line + separator + [0] * i + [1] * block,
+                                              [0])
 
-                remaining_def.insert(0, block)
-                return
+            remaining_def.insert(0, block)
+            return res
 
-            _combine(line_def, [], [])
-            return result_list
+        def check_line(current_line: List[int], pattern: List[int]):
+            return all(map(lambda c, p: p == '?' or p == c, current_line, pattern))
 
         def _filter_comb(lines_combinations: List[List[List[int]]],
                          matrix: List[List[Union[int, str]]],
                          get_line: Callable[[int, List[List[Union[int, str]]]], List[Union[int, str]]]) -> bool:
             old_combs = 0
             new_combs = 0
-
-            def check_line(current_line: List[int], pattern: List[int]):
-                return all(map(lambda c, p: p == '?' or p == c, current_line, pattern))
 
             for i, line_comb in enumerate(lines_combinations):
                 old_combs += len(line_comb)
@@ -66,31 +66,27 @@ class Picross:
 
         def _get_global_state(index: int, combinations: List[List[Union[int, str]]]) -> Union[int, str]:
             c = combinations[0][index]
-            if all(map(lambda x: x[index] == c, combinations)):
-                return c
-            return '?'
+            return c if all(map(lambda x: x[index] == c, combinations)) else '?'
 
         def _reduce():
-            for i in range(self.row_len):
-                for j in range(self.col_len):
-                    if self.matrix[i][j] == '?':
-                        self.matrix[i][j] = _get_global_state(j, self.row_comb[i])
+            for (i, j) in product(range(self.row_len), range(self.col_len)):
+                if self.matrix[i][j] == '?':
+                    self.matrix[i][j] = _get_global_state(j, self.row_comb[i])
 
-                    if self.matrix[i][j] == '?':
-                        self.matrix[i][j] = _get_global_state(i, self.col_comb[j])
+                if self.matrix[i][j] == '?':
+                    self.matrix[i][j] = _get_global_state(i, self.col_comb[j])
 
             rows_change = _filter_comb(self.row_comb, self.matrix, lambda i, matrix: matrix[i])
             cols_change = _filter_comb(self.col_comb, self.matrix, lambda i, matrix: [r[i] for r in matrix])
             return rows_change or cols_change
 
         init_row = ['?'] * self.row_len
-        self.matrix = [init_row.copy() for i in range(self.col_len)]
-        self.row_comb = [_get_line_combs(self.row_len, r) for r in self.row_def]
-        self.col_comb = [_get_line_combs(self.col_len, c) for c in self.col_def]
+        self.matrix = [init_row.copy() for _ in range(self.col_len)]
+        self.row_comb = [_get_line_combinations(self.row_len, r) for r in self.row_def]
+        self.col_comb = [_get_line_combinations(self.col_len, c) for c in self.col_def]
 
         while _reduce():
             pass
-        return
 
 
 if __name__ == "__main__":

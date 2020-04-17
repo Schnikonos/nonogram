@@ -1,5 +1,6 @@
 import time
 from enum import Enum
+from itertools import product
 from typing import List, Callable
 
 
@@ -21,41 +22,44 @@ class Cell:
         return 'X' if self.state == State.FILLED else ' '
 
 
+def _get_line_combs(line_len: int, remaining_def: List[int], wrk_line=None, separator=None) -> List[List[Cell]]:
+    if wrk_line is None:
+        wrk_line = []
+    if separator is None:
+        separator = []
+
+    remaining_len = line_len - len(wrk_line)
+    if not remaining_def:
+        return [(wrk_line + [Cell(State.EMPTY) for _ in range(remaining_len)])]
+
+    block = remaining_def.pop(0)
+    move_range = (remaining_len
+                  - block
+                  - len(separator)
+                  - sum(remaining_def)
+                  - len(remaining_def)
+                  + 1)
+
+    res = []
+    for i in range(move_range):
+        res += _get_line_combs(
+            line_len,
+            remaining_def,
+            wrk_line + separator + [Cell(State.EMPTY) for _ in range(i)] + [Cell(State.FILLED) for _ in range(block)],
+            [Cell(State.EMPTY)]
+        )
+
+    remaining_def.insert(0, block)
+    return res
+
+
 class Line:
     definition: List[int]
     combinations: List[List[Cell]]
 
     def __init__(self, line_len: int, definition: List[int]):
         self.definition = definition
-        self.combinations = self._get_line_combs(line_len)
-
-    def _get_line_combs(self, line_len: int) -> List[List[Cell]]:
-        result_list = []
-
-        def combine(remaining_def: List[int], wrk_line: List[Cell], separator: List[Cell]):
-            remaining_len = line_len - len(wrk_line)
-            if not remaining_def:
-                result_list.append((wrk_line + [Cell(State.EMPTY) for _ in range(remaining_len)]))
-                return
-
-            block = remaining_def.pop(0)
-            move_range = (remaining_len
-                          - block
-                          - len(separator)
-                          - sum(remaining_def)
-                          - len(remaining_def)
-                          + 1)
-
-            for i in range(move_range):
-                combine(remaining_def,
-                        wrk_line + separator + [Cell(State.EMPTY) for _ in range(i)] + [Cell(State.FILLED) for _ in range(block)],
-                        [Cell(State.EMPTY)])
-
-            remaining_def.insert(0, block)
-            return
-
-        combine(self.definition, [], [])
-        return result_list
+        self.combinations = _get_line_combs(line_len, self.definition)
 
 
 class Lines:
@@ -97,24 +101,18 @@ class Picross:
         self.cols = Lines(len(row_def), col_def)
         self.matrix = [[Cell() for _ in range(len(col_def))] for _ in range(len(row_def))]
 
-    def _reduce_combinations(self):
-        for i in range(self.rows.length):
-            for j in range(self.cols.length):
+    def resolve(self):
+        rows_change, cols_change = True, True
+        while rows_change or cols_change:
+            for i, j in product(range(self.rows.length), range(self.cols.length)):
                 if self.matrix[i][j].state == State.NA:
                     self.matrix[i][j].state = _get_global_state(j, self.rows.defs[i].combinations)
 
                 if self.matrix[i][j].state == State.NA:
                     self.matrix[i][j].state = _get_global_state(i, self.cols.defs[j].combinations)
 
-        rows_change = self.rows.filter(self.matrix, lambda i, matrix: matrix[i])
-        cols_change = self.cols.filter(self.matrix, lambda i, matrix: [r[i] for r in matrix])
-
-        return rows_change or cols_change
-
-    def resolve(self):
-        while self._reduce_combinations():
-            pass
-        return
+            rows_change = self.rows.filter(self.matrix, lambda i, matrix: matrix[i])
+            cols_change = self.cols.filter(self.matrix, lambda i, matrix: [r[i] for r in matrix])
 
 
 if __name__ == "__main__":
